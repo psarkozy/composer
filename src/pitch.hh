@@ -10,6 +10,8 @@
 static inline double level2dB(double level) { return 20.0 * std::log10(level); }
 static inline double dB2level(double db) { return std::pow(10.0, db / 20.0); }
 
+static const unsigned FFT_VIZ = 512; //the number of bins for the background image
+
 /// A tone is a collection of a base frequency (freq) and all its harmonics
 struct Tone {
 	static const std::size_t MAXHARM = 16; ///< The maximum number of harmonics tracked
@@ -69,7 +71,9 @@ public:
 	typedef std::vector<Peak> Peaks;  ///< Peaks (the second level of detection)
 	typedef std::list<Tone> Tones; ///< Tones (the final level of detection)
 	typedef std::list<Moment> Moments; ///< Time-serie history of time and tones
-	/// constructor
+    //typedef std::vector<float> fftviz_data; //FFT visualization data for 69-988 hz
+    typedef std::list<std::vector<double>> FFTs;
+    /// constructor
 	Analyzer(double rate, std::string id);
 	/** Get the fourier transform. **/
 	Fourier const& getFourier() const { return m_fft; }
@@ -89,12 +93,14 @@ public:
 	unsigned processSize() const;  ///< The number of samples required by process()
 	unsigned processStep() const;  ///< The number of samples to increment the input position after each call to process()
 	double getTime() const { return m_moments.empty() ? 0.0 : m_moments.back().time(); }
+    FFTs m_allffts; //list of vectors of DB values for the known range
+
+    double m_rate;
 private:
-	double m_rate;
 	std::string m_id;
 	std::vector<float> m_window;
 	Fourier m_fft;
-	std::vector<float> m_fftLastPhase;
+    std::vector<float> m_fftLastPhase;
 	Peaks m_peaks;
 	Moments m_moments;
 	mutable double m_oldfreq;

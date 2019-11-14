@@ -10,11 +10,13 @@
 #include <QProgressDialog>
 #include <QLabel>
 #include <QSettings>
+#include <QDebug>
 
 PitchVis::PitchVis(QString const& filename, QWidget *parent, int visId)
 	: QThread(parent), mutex(), fileName(filename), duration(), moreAvailable(), quit(),
 	  cancelled(), restart(), m_x1(), m_y1(), m_x2(), m_y2(), m_visId(visId), condition()
 {
+    FFTImage = QImage();
 	start(); // Launch the thread
 }
 
@@ -71,6 +73,30 @@ void PitchVis::run()
 		}
 		// DEBUG: std::ofstream("audio.raw", std::ios::binary).write(reinterpret_cast<char*>(&data[0]), data.size() * sizeof(float));
 		// Filter the analyzer output data into QPainterPaths.
+        m_allffts = analyzers[0].m_allffts;
+        // We need to create an image corresponding to the fft data
+        unsigned fftx = analyzers[0].m_allffts.size();
+        unsigned ffty = FFT_VIZ;
+        FFTImage = QImage(fftx,ffty, QImage::Format_RGB32);
+        FFTImage.fill(QColor(0,0,255));
+        x=0;
+        for (std::list<std::vector<double>>::iterator itfft = analyzers[0].m_allffts.begin(), itfftend = analyzers[0].m_allffts.end(); itfft != itfftend; itfft++){
+
+
+            for (unsigned y = 0; y < ffty ; y++){
+                double dbvalue = 96.0+itfft->at(y);
+
+                int scaledb = 255.0*(std::min(1.0,std::max(0.0, (dbvalue -40.0)/30.0)));
+
+                FFTImage.setPixelColor(x,ffty-y+1,QColor(scaledb,scaledb,0));
+
+            }
+            x++;
+
+        }
+        m_rate = analyzers[0].m_rate;
+        m_fft_step = analyzers[0].processStep();
+
 		std::vector<Analyzer::Moments::const_iterator> mit(channels), mend(channels);
 		for (unsigned ch = 0; ch < channels; ++ch) {
 			Analyzer::Moments const& moments = analyzers[ch].getMoments();
@@ -140,21 +166,34 @@ void PitchVis::renderer() {
 		// Rendering
 		// QImage allows drawing in non-main/non-GUI thread
 		QImage image(x2-x1, y2-y1, QImage::Format_ARGB32_Premultiplied);
-		NoteGraphWidget *widget = qobject_cast<NoteGraphWidget*>(parent());
-		if (!widget) continue;
-		QSettings settings; // Default QSettings parameters given in main()
-		bool aa = settings.value("anti-aliasing", true).toBool();
+        //image = FFTImage.scaled(x2-x1,y2-y1,Qt::IgnoreAspectRatio,Qt::FastTransformation);
 
+
+        NoteGraphWidget *widget = qobject_cast<NoteGraphWidget*>(parent());
+		if (!widget) continue;
+
+        double indextotime = m_rate / m_fft_step; //approxx 86 ffts per sec
+        unsigned start = (widget->px2s(x1))*indextotime;
+        unsigned end = widget->px2s(x2)*indextotime;
+        QImage drawslice = FFTImage.copy(start,0,end-start,512);
+        image =drawslice.scaled(x2-x1,y2-y1,Qt::IgnoreAspectRatio,Qt::FastTransformation);
+
+
+        QSettings settings; // Default QSettings parameters given in main()
+		bool aa = settings.value("anti-aliasing", true).toBool();
+        //x12 and y12 are the sizes of the "canvas"
 		{
 			QPainter painter(&image);
 			painter.setCompositionMode(QPainter::CompositionMode_Source);
 			if (aa) painter.setRenderHint(QPainter::Antialiasing);
 			// Fill the background, otherwise the image will have all kinds of carbage
-			painter.fillRect(image.rect(), QColor(0,0,0,0));
-
-			QPen pen;
+            //painter.fillRect(image.rect(), QColor(0,0,0,0));
+            QPen pen;
 			pen.setWidth(8);
 			pen.setCapStyle(Qt::RoundCap);
+
+
+            qDebug() << "start; " << start << "  end:"<<end;
 
 			PitchVis::Paths const& paths = getPaths();
 			for (PitchVis::Paths::const_iterator it = paths.begin(), itend = paths.end(); it != itend; ++it) {

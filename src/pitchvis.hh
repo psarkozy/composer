@@ -31,6 +31,7 @@ class PitchVis: public QThread
 public:
 	typedef std::vector<PitchPath> Paths;
 	QMutex mutex;
+    //typedef std::list<>
 
 	PitchVis(QString const& filename, QWidget *parent = NULL, int visId = 0);
 	~PitchVis() { stop(); wait(); }
@@ -42,6 +43,7 @@ public:
 	double getProgress() const { return position / duration; }
 	double getDuration() const { return duration; }
 	int guessNote(double begin, double end, int initial);
+    std::list<std::vector<double>> FFTs;
 
 signals:
 	void renderedImage(const QImage &image, const QPoint &position, int visId);
@@ -65,5 +67,9 @@ private:
 	QWaitCondition condition;
 	int m_x1, m_y1, m_x2, m_y2;
 	int m_visId;
+    double m_rate;
+    double m_fft_step;
+    QImage FFTImage;
+    std::list<std::vector<double>> m_allffts;
 };
 

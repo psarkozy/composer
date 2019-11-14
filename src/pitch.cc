@@ -4,9 +4,14 @@
 #include <cmath>
 #include <numeric>
 
-static const unsigned FFT_P = 12;  // FFT size setting, will use 2^FFT_P sample FFT
+#include <QDebug>
+
+static const unsigned FFT_P = 14;  // FFT size setting, will use 2^FFT_P sample FFT
+static const unsigned ZERO_PADDING_FACTOR = 2;
 static const std::size_t FFT_N = 1 << FFT_P;  // FFT size in samples
 static const std::size_t FFT_STEP = 512;  // Step size in samples, should be <= 0.25 * FFT_N. Low values cause high CPU usage.
+static const double FFT_VIZ_MINFREQ = 67.0;
+static const double FFT_VIZ_MAXFREQ = 989.0;
 
 // Limit the range to avoid noise and useless computation
 static const double FFT_MINFREQ = 45.0;
@@ -31,6 +36,12 @@ Analyzer::Analyzer(double rate, std::string id):
 	for (size_t i=0; i < FFT_N; i++) {
 		m_window[i] = 0.53836 - 0.46164 * std::cos(2.0 * M_PI * i / (FFT_N - 1));
 	}
+    for (int i = 0; i < FFT_N; i++) { //Hann Window
+        if (i < FFT_N/ZERO_PADDING_FACTOR)
+        m_window[i] = 0.5 * (1 - cos(2*3.141592*i/(FFT_N/ZERO_PADDING_FACTOR)));
+        else
+        m_window[i] = 0.0;
+    }
 }
 
 unsigned Analyzer::processSize() const { return FFT_N; }
@@ -54,15 +65,24 @@ void Combo::combine(Peak const& p) {
 
 bool Combo::match(double freqOther) const { return matchFreq(freq, freqOther); }
 
-void Analyzer::calcTones() {
+void Analyzer::calcTones() { // this is run once for each FFT_STEP
 	// Precalculated constants
-	const double freqPerBin = m_rate / FFT_N;
+    const double freqPerBin = m_rate / FFT_N; //
 	const double phaseStep = 2.0 * M_PI * FFT_STEP / FFT_N;
 	const double normCoeff = 1.0 / FFT_N;
 	// Limit frequency range of processing
 	const size_t kMin = std::max(size_t(3), size_t(FFT_MINFREQ / freqPerBin));
 	const size_t kMax = std::min(FFT_N / 2, size_t(FFT_MAXFREQ / freqPerBin));
-	m_peaks.resize(kMax);
+    m_peaks.resize(kMax);
+
+
+
+    qDebug() << "Analyzing";
+
+    //create a 512 vector of floats for the fft data
+    std::vector<double> visfftvec;
+    visfftvec.resize(FFT_VIZ);
+
 	// Process FFT into peaks
 	for (size_t k = 1; k < kMax; ++k) {
 		double level = normCoeff * std::abs(m_fft[k]);
@@ -76,8 +96,16 @@ void Analyzer::calcTones() {
 		m_peaks[k].freqFFT = k * freqPerBin;  // Calculate the simple FFT frequency
 		m_peaks[k].freq = (k + delta) * freqPerBin;  // Calculate the true frequency
 		m_peaks[k].level = level;
+
 	}
-	// Filter peaks and combine adjacent peaks pointing at the same frequency into one
+    for (size_t n = 0; n < FFT_VIZ;n++){
+        size_t bin_id = (int) floor((FFT_VIZ_MINFREQ/freqPerBin)*pow(2.0,n/(FFT_VIZ/4.0)));
+        visfftvec[n] = level2dB(normCoeff * std::abs(m_fft[bin_id]));
+        //qDebug() << " N " <<  n << " bin_id: "<<bin_id << "fft val="<< visfftvec[n]<< "known frequency" << freqPerBin*bin_id;
+    }
+    m_allffts.push_back(visfftvec);
+
+    // Filter peaks and combine adjacent peaks pointing at the same frequency into one
 	typedef std::vector<Combo> Combos;
 	Combos combos;
 	for (size_t k = kMin; k < kMax; ++k) {
@@ -155,7 +183,8 @@ void Analyzer::temporalMerge(Tones& tones) {
 			}
 		}
 	}
-	m_moments.push_back(Moment(m_moments.size() * processStep() / m_rate));
+	
+    m_moments.push_back(Moment(m_moments.size() * processStep() / m_rate));
 	m_moments.back().stealTones(tones);  // No pointers are invalidated
 }
 
