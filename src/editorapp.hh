@@ -136,6 +136,16 @@ public slots:
 	void on_chkLineBreak_clicked(bool checked);
 	void on_sliderPlaybackRate_valueChanged(int value);
 
+    //new shit
+    void on_cmdLength1_clicked();
+    void on_cmdLength2_clicked();
+    void on_cmdLength3_clicked();
+    void on_cmdLength4_clicked();
+    void on_cmdShoveLeft_clicked();
+    void on_cmdShoveRight_clicked();
+    void on_spinBoxBPM_valueChanged(qreal bpm);
+    void on_spinBoxDelay_valueChanged(qreal delay);
+
 protected:
 	void closeEvent(QCloseEvent *event);
 

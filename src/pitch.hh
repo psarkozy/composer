@@ -94,12 +94,16 @@ public:
 	unsigned processStep() const;  ///< The number of samples to increment the input position after each call to process()
 	double getTime() const { return m_moments.empty() ? 0.0 : m_moments.back().time(); }
     FFTs m_allffts; //list of vectors of DB values for the known range
+    FFTs m_allffts_hf; //list of vectors of DB values for the known range
 
     double m_rate;
 private:
 	std::string m_id;
 	std::vector<float> m_window;
+
+    std::vector<float> m_window_hf;
 	Fourier m_fft;
+    Fourier m_fft_hf;
     std::vector<float> m_fftLastPhase;
 	Peaks m_peaks;
 	Moments m_moments;

@@ -47,8 +47,10 @@ void PitchVis::run()
 			duration = mpeg.duration(); // Estimation
 		}
 		unsigned rate = mpeg.audioQueue.getRate();
+        rate = 48000; //BECAUSE FUCK YOU THATS WHY
 		unsigned channels = mpeg.audioQueue.getChannels();
 		if (channels == 0) throw std::runtime_error("No audio channels found");
+        qDebug() << "Loaded file has a sample rate of "<< rate <<" and a channel count of " <<channels<< " duration of "<<duration ;
 		std::vector<Analyzer> analyzers(channels, Analyzer(rate, ""));
 		// Process the entire song
 		std::vector<float> data;
@@ -80,17 +82,22 @@ void PitchVis::run()
         FFTImage = QImage(fftx,ffty, QImage::Format_RGB32);
         FFTImage.fill(QColor(0,0,255));
         x=0;
+        std::list<std::vector<double>>::iterator it_hf = analyzers[0].m_allffts_hf.begin();
         for (std::list<std::vector<double>>::iterator itfft = analyzers[0].m_allffts.begin(), itfftend = analyzers[0].m_allffts.end(); itfft != itfftend; itfft++){
 
 
             for (unsigned y = 0; y < ffty ; y++){
                 double dbvalue = 96.0+itfft->at(y);
-
                 int scaledb = 255.0*(std::min(1.0,std::max(0.0, (dbvalue -40.0)/30.0)));
 
-                FFTImage.setPixelColor(x,ffty-y+1,QColor(scaledb,scaledb,0));
+                double dbvalue_hf = 96.0+it_hf->at(y);
+                int scaledb_hf = 255.0*(std::min(1.0,std::max(0.0, (dbvalue_hf -20.0)/30.0)));
+
+                FFTImage.setPixelColor(x,ffty-y-1,QColor(scaledb,scaledb,scaledb_hf));
+                //FFTImage.setPixelColor(x,ffty-y-1,QColor(scaledb,scaledb,0));
 
             }
+            std::advance(it_hf, 1);
             x++;
 
         }
@@ -120,7 +127,8 @@ void PitchVis::run()
 						float t = momit->m_time;
 						float n = scale.getNote(tones[i]->freq);
 						float level = level2dB(tones[i]->level);
-						score += tones[i]->level;
+
+                        score += tones[i]->level;
 						path.fragments.push_back(PitchFragment(t, n, level));
 					}
 					QMutexLocker locker(&mutex);
@@ -173,7 +181,7 @@ void PitchVis::renderer() {
 		if (!widget) continue;
 
         double indextotime = m_rate / m_fft_step; //approxx 86 ffts per sec
-        unsigned start = (widget->px2s(x1))*indextotime;
+        unsigned start = (widget->px2s(x1))*indextotime; //this transforms
         unsigned end = widget->px2s(x2)*indextotime;
         QImage drawslice = FFTImage.copy(start,0,end-start,512);
         image =drawslice.scaled(x2-x1,y2-y1,Qt::IgnoreAspectRatio,Qt::FastTransformation);
@@ -189,14 +197,40 @@ void PitchVis::renderer() {
 			// Fill the background, otherwise the image will have all kinds of carbage
             //painter.fillRect(image.rect(), QColor(0,0,0,0));
             QPen pen;
-			pen.setWidth(8);
+            pen.setWidth(1);
 			pen.setCapStyle(Qt::RoundCap);
+            pen.setColor(QColor(0, 0, 255, 128));
+            painter.setPen(pen);
+            // ok now to render BPM small bars and large bars
+            double graphstarttime = widget->px2s(x1);
+            double graphendtime = widget->px2s(x2);
+            int quarter_beat_index = 0;
+            for (double beattime = widget->getDelay(); beattime < graphendtime; beattime += (60.0/widget->getBPM())/4.0 ){
+                if (beattime > graphstarttime){
+                    int beatxpos = widget->s2px(beattime) -x1 ;
+                    if (quarter_beat_index % 4 == 0) {
+                        pen.setColor(QColor(255, 255, 255, 255));
+                        painter.setPen(pen);
 
+                    }else {
+                        pen.setColor(QColor(0, 0, 100, 128));
+                        painter.setPen(pen);
 
-            qDebug() << "start; " << start << "  end:"<<end;
+                    }
+
+                    painter.drawLine(beatxpos,y1,beatxpos,y2);
+
+                    qDebug() << "Beat line: " << beatxpos << " time"<<beattime;
+                }
+                quarter_beat_index ++;
+            }
+
+            qDebug() << "graphstarttime: " << graphstarttime << " graphendtime"<<graphendtime;
+
 
 			PitchVis::Paths const& paths = getPaths();
 			for (PitchVis::Paths::const_iterator it = paths.begin(), itend = paths.end(); it != itend; ++it) {
+                break; //disable path rendering as its ugly
 				PitchPath::Fragments const& fragments = it->fragments;
 				int oldx, oldy;
 				// Only render paths in view
@@ -212,6 +246,7 @@ void PitchVis::renderer() {
 					else
 						pen.setColor(QColor(clamp<int>(127 + it2->level, 32, 255), 32, 32 + 32 * it->channel, 100));
 					painter.setPen(pen);
+                    //qDebug() << "Drawing note  "<< it2->note << " str "<<qUtf8Printable(scale.getNoteStr(it2->note)) <<" freq " << scale.getNoteFreq(it2->note) <<" level "<< it2->level << " at time "<< it2->time;
 					if (it2 != fragments.begin()) painter.drawLine(oldx, oldy, x, y);
 					oldx = x; oldy = y;
 				}

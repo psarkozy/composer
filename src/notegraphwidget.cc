@@ -7,6 +7,7 @@
 #include <QToolTip>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QDebug>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -377,6 +378,51 @@ void NoteGraphWidget::timeCurrent()
 		doOperation(op);
 	}
 }
+
+void NoteGraphWidget::shoveLeftCurrent(){
+    if (selectedNote()){
+        Operation op("MOVE");
+        double oldstart = selectedNote()->note().begin;
+        double oldend = selectedNote()->note().end;
+        double duration = oldend-oldstart;
+        double newstart =m_DelayS + (60.0/(m_barsPerBeat*m_BPM))*floor( (oldstart - m_DelayS -0.0001)/(60.0/(m_barsPerBeat*m_BPM)) );  //closest quarter beat floor
+        double newend = newstart+duration;
+        int n = selectedNote()->note().note;
+        op << getNoteLabelId(selectedNote()) << newstart << newend <<n;
+        doOperation(op);
+        qDebug() << "Moving selected note from " <<oldstart << "to" <<newstart;
+    }
+}
+
+void NoteGraphWidget::shoveRightCurrent(){
+    if (selectedNote()){
+        Operation op("MOVE");
+        double oldstart = selectedNote()->note().begin;
+        double oldend = selectedNote()->note().end;
+        double duration = oldend-oldstart;
+        double newstart =m_DelayS + (60.0/(m_barsPerBeat*m_BPM))*ceil((oldstart - m_DelayS +0.0001)/(60.0/(m_barsPerBeat*m_BPM)) );  //closest quarter beat floor
+        double newend = newstart+duration;
+        int n = selectedNote()->note().note;
+        op << getNoteLabelId(selectedNote()) << newstart << newend <<n;
+        doOperation(op);
+        qDebug() << "Moving selected note from " <<oldstart << "to" <<newstart;
+    }
+}
+
+void NoteGraphWidget::beatSizeCurrent(int beatsize){
+    if (selectedNote()){
+        Operation op("MOVE");
+        double oldstart = selectedNote()->note().begin;
+        double newend = oldstart + beatsize * (60.0/(m_barsPerBeat*m_BPM));
+
+        int n = selectedNote()->note().note;
+        op << getNoteLabelId(selectedNote()) << oldstart << newend <<n;
+        doOperation(op);
+        qDebug() << "Resizing note to  "<<beatsize<< " start" <<oldstart << "to" <<newend;
+    }
+}
+
+
 
 void NoteGraphWidget::timeSyllable()
 {

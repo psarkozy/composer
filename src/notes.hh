@@ -5,6 +5,7 @@
 #include <vector>
 #include <QString>
 
+
 /// musical scale, defaults to C major
 class MusicalScale {
   private:

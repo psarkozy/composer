@@ -118,6 +118,10 @@ public:
 	void setLyrics(QString lyrics);
 	void setLyrics(const VocalTrack &track);
 	void analyzeMusic(QString filepath, int visId = 0);
+    void setDelay(double delay){ m_DelayS = delay;}
+    void setBPM(double bpm){m_BPM = bpm;}
+    double getDelay(){return m_DelayS;}
+    double getBPM(){return m_BPM;}
 
 	void updateNotes(bool leftToRight = true);
 	void updateMusicPos(qint64 time, bool smoothing = true);
@@ -142,6 +146,9 @@ public slots:
 	void startNotePixmapUpdates(); ///< Starts creating pixmaps for NoteLabels
 	void forcedNotePixmapUpdate();
 	void playbackRateChanged(qreal rate);
+    void shoveLeftCurrent();
+    void shoveRightCurrent();
+    void beatSizeCurrent(int beatsize);
 
 signals:
 	void analyzeProgress(int, int);
@@ -178,6 +185,9 @@ private:
 	qreal m_playbackRate;
 	QPixmap m_pixmap[MaxPitchVis];
 	QPoint m_pixmapPos[MaxPitchVis];
+    qreal m_BPM;
+    qreal m_DelayS;
+    qreal m_barsPerBeat = 4.0;
 };
 
 

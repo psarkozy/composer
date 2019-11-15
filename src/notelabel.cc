@@ -11,7 +11,7 @@ namespace {
 	static const int text_margin = 3; // Margin of the label texts
 }
 
-const int NoteLabel::render_delay = 300; // How many ms to wait before updating pixmap after some action
+const int NoteLabel::render_delay = 150; // How many ms to wait before updating pixmap after some action
 const int NoteLabel::resize_margin = 5; // How many pixels is the resize area
 const double NoteLabel::default_length = 0.5; // The preferred size of notes
 const double NoteLabel::min_length = 0.05; // How many seconds minimum

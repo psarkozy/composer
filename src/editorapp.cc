@@ -22,6 +22,7 @@
 #include "textcodecselector.hh"
 #include "gettingstarted.hh"
 #include "busydialog.hh"
+#include <QDebug>
 
 namespace {
 	static const QString PROJECT_SAVE_FILE_EXTENSION = "songproject"; // FIXME: Nice extension here
@@ -921,6 +922,60 @@ void EditorApp::on_cmdSplit_clicked()
 {
 	if (noteGraph) noteGraph->split(noteGraph->selectedNote());
 }
+void EditorApp::on_cmdLength1_clicked()
+{
+    qDebug() << "cmdLength1_clicked";
+    if (noteGraph) noteGraph->beatSizeCurrent(1);
+}
+
+void EditorApp::on_cmdLength2_clicked()
+{
+    qDebug() << "cmdLength2_clicked";
+    if (noteGraph) noteGraph->beatSizeCurrent(2);
+}
+
+void EditorApp::on_cmdLength3_clicked()
+{
+    qDebug() << "cmdLength3_clicked";
+    if (noteGraph) noteGraph->beatSizeCurrent(3);
+}
+
+void EditorApp::on_cmdLength4_clicked()
+{
+    qDebug() << "cmdLength4_clicked";
+    if (noteGraph) noteGraph->beatSizeCurrent(4);
+}
+void EditorApp::on_cmdShoveRight_clicked()
+{
+    qDebug() << "cmdShoveRight_clicked";
+
+    if (noteGraph) noteGraph->shoveRightCurrent();
+}
+
+void EditorApp::on_cmdShoveLeft_clicked()
+{
+    qDebug() << "cmdShoveLeft_clicked";
+
+    if (noteGraph) noteGraph->shoveLeftCurrent();
+}
+
+void EditorApp::on_spinBoxDelay_valueChanged(qreal delay)
+{
+    qDebug() << "on_spinBoxDelay_valueChanged"<< delay;
+
+    if (noteGraph) noteGraph->setDelay(delay);
+}
+
+void EditorApp::on_spinBoxBPM_valueChanged(qreal bpm)
+{
+    qDebug() << "on_spinBoxBPM_valueChanged" <<bpm;
+
+    if (noteGraph) noteGraph->setBPM(bpm);
+}
+
+
+void on_spinBoxDelay_valueChanged(float value);
+
 
 void EditorApp::on_cmdInsert_clicked()
 {

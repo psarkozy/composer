@@ -88,72 +88,30 @@
         <string>This tab contains playback, timing and note manipulation tools.</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="1" column="0">
-         <widget class="QPushButton" name="cmdPlay">
-          <property name="toolTip">
-           <string>Play/pause the music file</string>
+        <item row="0" column="3">
+         <widget class="QLabel" name="lblNoteProperties">
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
           </property>
           <property name="text">
-           <string>Play (P)</string>
-          </property>
-          <property name="shortcut">
-           <string>P</string>
+           <string>Note properties</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QPushButton" name="cmdTimeSentence">
-          <property name="toolTip">
-           <string>Set selected note start to cursor position and move to next phrase start</string>
-          </property>
+        <item row="3" column="1">
+         <widget class="QPushButton" name="cmdTimeNote">
           <property name="text">
-           <string>Time phrase (N)</string>
-          </property>
-          <property name="shortcut">
-           <string>N</string>
+           <string>Time note</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
-         <widget class="QPushButton" name="cmdSplit">
+        <item row="4" column="0">
+         <widget class="QCheckBox" name="chkSynth">
           <property name="toolTip">
-           <string>Split selected note into two new ones</string>
+           <string>Synthesize and play notes during playback</string>
           </property>
           <property name="text">
-           <string>&amp;Split note</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0" colspan="4">
-         <widget class="QLabel" name="lblCurrentSentence">
-          <property name="text">
-           <string>Current phrase:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QCheckBox" name="chkGrabSeekHandle">
-          <property name="toolTip">
-           <string>Make sure the playback cursor is always visible</string>
-          </property>
-          <property name="text">
-           <string>Grab playback</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QPushButton" name="cmdSkipSentence">
-          <property name="toolTip">
-           <string>Skip to next phrase start without timing</string>
-          </property>
-          <property name="text">
-           <string>Skip phrase (M)</string>
-          </property>
-          <property name="shortcut">
-           <string>M</string>
+           <string>Synthesizer</string>
           </property>
          </widget>
         </item>
@@ -170,23 +128,10 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="2">
-         <widget class="QPushButton" name="cmdInsert">
-          <property name="toolTip">
-           <string>Insert new notes after the selected one</string>
-          </property>
+        <item row="0" column="1">
+         <widget class="QLabel" name="lblTiming">
           <property name="text">
-           <string>I&amp;nsert after</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QCheckBox" name="chkSynth">
-          <property name="toolTip">
-           <string>Synthesize and play notes during playback</string>
-          </property>
-          <property name="text">
-           <string>Synthesizer</string>
+           <string>Timing</string>
           </property>
          </widget>
         </item>
@@ -194,13 +139,6 @@
          <widget class="QLabel" name="lblPlayback">
           <property name="text">
            <string>Playback</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="lblTiming">
-          <property name="text">
-           <string>Timing</string>
           </property>
          </widget>
         </item>
@@ -248,6 +186,121 @@
           </property>
          </widget>
         </item>
+        <item row="8" column="0">
+         <widget class="QLabel" name="labelBPM">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>BPM:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="cmdInsert">
+          <property name="toolTip">
+           <string>Insert new notes after the selected one</string>
+          </property>
+          <property name="text">
+           <string>I&amp;nsert after</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QCheckBox" name="chkGrabSeekHandle">
+          <property name="toolTip">
+           <string>Make sure the playback cursor is always visible</string>
+          </property>
+          <property name="text">
+           <string>Grab playback</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="3">
+         <widget class="QDoubleSpinBox" name="spinBoxDelay">
+          <property name="decimals">
+           <number>3</number>
+          </property>
+          <property name="maximum">
+           <double>999.990000000000009</double>
+          </property>
+          <property name="singleStep">
+           <double>0.010000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="cmdTimeSentence">
+          <property name="toolTip">
+           <string>Set selected note start to cursor position and move to next phrase start</string>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Time phrase (N)</string>
+          </property>
+          <property name="shortcut">
+           <string>N</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="cmdSkipSentence">
+          <property name="toolTip">
+           <string>Skip to next phrase start without timing</string>
+          </property>
+          <property name="text">
+           <string>Skip phrase (M)</string>
+          </property>
+          <property name="shortcut">
+           <string>M</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="cmdPlay">
+          <property name="toolTip">
+           <string>Play/pause the music file</string>
+          </property>
+          <property name="text">
+           <string>Play (P)</string>
+          </property>
+          <property name="shortcut">
+           <string>P</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="cmdSplit">
+          <property name="toolTip">
+           <string>Split selected note into two new ones</string>
+          </property>
+          <property name="text">
+           <string>&amp;Split note</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="lblTools">
+          <property name="text">
+           <string>Tools</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="4">
+         <widget class="QPushButton" name="cmdShoveRight">
+          <property name="text">
+           <string>Shove right (V)</string>
+          </property>
+          <property name="shortcut">
+           <string>V</string>
+          </property>
+         </widget>
+        </item>
         <item row="4" column="2">
          <widget class="QSlider" name="sliderPlaybackRate">
           <property name="sizePolicy">
@@ -270,35 +323,65 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="lblTools">
+        <item row="4" column="4">
+         <widget class="QPushButton" name="cmdLength2">
           <property name="text">
-           <string>Tools</string>
+           <string>Length 2</string>
+          </property>
+          <property name="shortcut">
+           <string>2</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="3">
-         <widget class="QLabel" name="lblNoteProperties">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
+        <item row="7" column="0" colspan="4">
+         <widget class="QLabel" name="lblCurrentSentence">
           <property name="text">
-           <string>Note properties</string>
+           <string>Current phrase:</string>
           </property>
          </widget>
         </item>
-        <item row="9" column="0">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+        <item row="7" column="4">
+         <widget class="QPushButton" name="cmdLength3">
+          <property name="text">
+           <string>Length 3</string>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
+          <property name="shortcut">
+           <string>3</string>
           </property>
-         </spacer>
+         </widget>
+        </item>
+        <item row="1" column="4">
+         <widget class="QPushButton" name="cmdShoveLeft">
+          <property name="toolTipDuration">
+           <number>-4</number>
+          </property>
+          <property name="text">
+           <string>Shove left (C)</string>
+          </property>
+          <property name="shortcut">
+           <string>C</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="4">
+         <widget class="QPushButton" name="cmdLength4">
+          <property name="text">
+           <string>Length 4</string>
+          </property>
+          <property name="shortcut">
+           <string>4</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="4">
+         <widget class="QPushButton" name="cmdLength1">
+          <property name="text">
+           <string>Length 1</string>
+          </property>
+          <property name="shortcut">
+           <string>1</string>
+          </property>
+         </widget>
         </item>
         <item row="4" column="3">
          <widget class="QCheckBox" name="chkLineBreak">
@@ -313,10 +396,26 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="QPushButton" name="cmdTimeNote">
+        <item row="8" column="2">
+         <widget class="QLabel" name="labelDelay">
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
           <property name="text">
-           <string>Time note</string>
+           <string>Delay seconds</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <widget class="QDoubleSpinBox" name="spinBoxBPM">
+          <property name="decimals">
+           <number>3</number>
+          </property>
+          <property name="maximum">
+           <double>9999.989999999999782</double>
+          </property>
+          <property name="value">
+           <double>140.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -431,7 +530,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

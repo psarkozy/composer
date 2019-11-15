@@ -10,6 +10,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <QtGlobal>
 
 struct PitchFragment {
 	float time, note, level;  // seconds, MIDI note, dB
