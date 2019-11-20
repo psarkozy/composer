@@ -132,9 +132,37 @@ EditorApp::EditorApp(QWidget *parent)
 	// The piano keys
 	piano = new Piano(ui.topFrame);
 	QHBoxLayout *hl = new QHBoxLayout(ui.topFrame);
-	hl->addWidget(piano);
-	hl->addWidget(ui.noteGraphScroller);
+    QVBoxLayout *vlleft = new QVBoxLayout();
+    QVBoxLayout *vlright = new QVBoxLayout();
+
+    vlleft->addWidget(piano);
+    //vlleft->addSpacing(1);
+    vlright->addWidget(ui.noteGraphScroller);
+
+    vlleft->setAlignment(Qt::AlignTop);
+    vlleft->setContentsMargins(0,0,0,0);
+    vlleft->setSpacing(0);
+    hl->addLayout(vlleft);
+    hl->addLayout(vlright);
+    //hl->addWidget(piano);
+    //hl->addWidget(ui.noteGraphScroller);
+
+
+    //hl->
+    hl->setAlignment(Qt::AlignTop);
+    piano->setAlignment(Qt::AlignTop);
+    piano->setContentsMargins(0,-10,0,0);
+    piano->setMargin(0);
+    hl->setAlignment(piano,Qt::AlignTop);
+    hl->setContentsMargins(0,-10,0,0);
+    hl->setSpacing(0);
+    //hl->set
+    hl->setMargin(0);
+
 	ui.topFrame->setLayout(hl);
+    hl->setAlignment(Qt::AlignTop);
+    piano->setAlignment(Qt::AlignTop);
+
 	connect(ui.noteGraphScroller->verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(updatePiano(int)));
 
 	// NoteGraph setup down here so that the objects we setup signals are already created
@@ -1123,10 +1151,12 @@ void Piano::updatePixmap(NoteGraphWidget *ngw)
 	const QColor mouseColor = QColor("#090");
 	int noteHeight = 16;
 	int mousen = round((NoteGraphWidget::Height - mapFromGlobal(QCursor::pos()).y()) / 16.0);
+    setAlignment(Qt::AlignTop);
 
 	QImage image(50, notes * noteHeight, QImage::Format_ARGB32_Premultiplied);
 	image.fill(qRgba(0, 0, 0, 0));
 	setFixedSize(image.width(), image.height());
+    setMargin(0);
 	{
 		QPainter painter(&image);
 		MusicalScale scale;
@@ -1165,6 +1195,8 @@ void Piano::updatePixmap(NoteGraphWidget *ngw)
 		}
 	}
 	setPixmap(QPixmap::fromImage(image));
+    setAlignment(Qt::AlignTop);
+
 }
 
 void Piano::mousePressEvent(QMouseEvent *event)

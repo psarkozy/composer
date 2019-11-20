@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <QtGlobal>
-
+#include <QDebug>
 // Somehow ffmpeg headers give errors that these are not defined...
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000
 extern "C" {
@@ -36,7 +36,7 @@ private:
 
 FFmpeg::FFmpeg(std::string const& _filename):
   m_filename(_filename), m_quit(), m_running(), m_eof(),
-  pFormatCtx(), pAudioCodecCtx(), pAudioCodec(), m_rate(48000),
+  pFormatCtx(), pAudioCodecCtx(), pAudioCodec(), m_rate(44100),
   audioStream(-1), m_position()
 {
 	open(); // Throws on error
@@ -94,6 +94,7 @@ void FFmpeg::open() {
 	av_opt_set_int(m_resampleContext, "out_sample_rate", m_rate, 0);
 	av_opt_set_int(m_resampleContext, "in_sample_fmt", pAudioCodecCtx->sample_fmt, 0);
 	av_opt_set_int(m_resampleContext, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
+    qDebug() << "FFmpeg::open says the out sample rate is:"<<m_rate<<"but the in sample rate is"<< pAudioCodecCtx->sample_rate;
 	swr_init(m_resampleContext);
 	if (!m_resampleContext) throw std::runtime_error("Cannot create resampling context");
 

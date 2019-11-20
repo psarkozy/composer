@@ -47,7 +47,8 @@ void PitchVis::run()
 			duration = mpeg.duration(); // Estimation
 		}
 		unsigned rate = mpeg.audioQueue.getRate();
-        rate = 48000; //BECAUSE FUCK YOU THATS WHY
+
+        //rate = 44100 ; //BECAUSE FUCK YOU THATS WHY
 		unsigned channels = mpeg.audioQueue.getChannels();
 		if (channels == 0) throw std::runtime_error("No audio channels found");
         qDebug() << "Loaded file has a sample rate of "<< rate <<" and a channel count of " <<channels<< " duration of "<<duration ;
@@ -76,33 +77,68 @@ void PitchVis::run()
 		// DEBUG: std::ofstream("audio.raw", std::ios::binary).write(reinterpret_cast<char*>(&data[0]), data.size() * sizeof(float));
 		// Filter the analyzer output data into QPainterPaths.
         m_allffts = analyzers[0].m_allffts;
+
+        m_rate = analyzers[0].m_rate;
+        m_fft_step = analyzers[0].processStep();
         // We need to create an image corresponding to the fft data
         unsigned fftx = analyzers[0].m_allffts.size();
         unsigned ffty = FFT_VIZ;
         FFTImage = QImage(fftx,ffty, QImage::Format_RGB32);
         FFTImage.fill(QColor(0,0,255));
         x=0;
-        std::list<std::vector<double>>::iterator it_hf = analyzers[0].m_allffts_hf.begin();
+        qDebug() <<"m_rate"<<m_rate<<"mpeg.audioqueue.rate"<<mpeg.audioQueue.getRate();
+        qDebug() << "VizFFT info m_rate"<<m_rate<< "num_fft_samples" << analyzers[0].m_allffts.size() ;
+        qDebug() <<"Calced fft samples:" << analyzers[0].m_allffts.size()*512 << "Duration = "<< duration << "Calcduration = " <<analyzers[0].m_allffts.size()*512.0/m_rate;
+
+        //std::list<std::vector<double>>::iterator it_hf = analyzers[0].m_allffts_hf.begin();
+        //for (std::list<std::vector<double>>::iterator itfft = analyzers[0]., itfftend = analyzers[0].m_allffts.end(); itfft != itfftend; itfft++){
+        int first = 1;
         for (std::list<std::vector<double>>::iterator itfft = analyzers[0].m_allffts.begin(), itfftend = analyzers[0].m_allffts.end(); itfft != itfftend; itfft++){
 
 
             for (unsigned y = 0; y < ffty ; y++){
-                double dbvalue = 96.0+itfft->at(y);
-                int scaledb = 255.0*(std::min(1.0,std::max(0.0, (dbvalue -40.0)/30.0)));
+                double dbvalue = 96.0+itfft->at(y); // will peak at like 90
+                if (first){
+                    qDebug()<< "pitchviz create image y"<<y<<"dbvalue"<<dbvalue;
 
-                double dbvalue_hf = 96.0+it_hf->at(y);
-                int scaledb_hf = 255.0*(std::min(1.0,std::max(0.0, (dbvalue_hf -20.0)/30.0)));
+                }
+                float scaledb = (std::min(1.0,std::max(0.0, (dbvalue-10.0)/(50.0))));// good for fft
+                //int scaledb = 255.0*(std::min(1.0,std::max(0.0, (dbvalue -100.0)/60.0))); // for eac
+                int r = 0;
+                int g = 0;
+                int b = 0;
+                if (scaledb<0.25){
+                    r=0;
+                    g=0;
+                    b=255*4*scaledb;
+                }else if (scaledb < 0.5){
+                    r=0;
+                    g = 255*(4*(scaledb-0.25));
+                    b = 255*(4*(0.5-scaledb));
 
-                FFTImage.setPixelColor(x,ffty-y-1,QColor(scaledb,scaledb,scaledb_hf));
+                }else if (scaledb < 0.75){
+                    r = (scaledb -0.5)*4*255;
+                    g = (0.75-scaledb)*4*255;
+                    b = 0;
+
+                }else{
+                    r = 255;
+                    g = (scaledb-0.75)*4*255;
+                    b = (scaledb-0.75)*4*255;
+
+                }
+
+                //double dbvalue_hf = 96.0+it_hf->at(y/4);
+                //int scaledb_hf = 255.0*(std::min(1.0,std::max(0.0, (dbvalue_hf -20.0)/40.0)));
+
+                FFTImage.setPixelColor(x,ffty-y-1,QColor(r,g,b));
                 //FFTImage.setPixelColor(x,ffty-y-1,QColor(scaledb,scaledb,0));
 
             }
-            std::advance(it_hf, 1);
+            //std::advance(it_hf, 1);
             x++;
-
+            first = 0;
         }
-        m_rate = analyzers[0].m_rate;
-        m_fft_step = analyzers[0].processStep();
 
 		std::vector<Analyzer::Moments::const_iterator> mit(channels), mend(channels);
 		for (unsigned ch = 0; ch < channels; ++ch) {
@@ -183,7 +219,7 @@ void PitchVis::renderer() {
         double indextotime = m_rate / m_fft_step; //approxx 86 ffts per sec
         unsigned start = (widget->px2s(x1))*indextotime; //this transforms
         unsigned end = widget->px2s(x2)*indextotime;
-        QImage drawslice = FFTImage.copy(start,0,end-start,512);
+        QImage drawslice = FFTImage.copy(start,0,end-start,FFT_VIZ);
         image =drawslice.scaled(x2-x1,y2-y1,Qt::IgnoreAspectRatio,Qt::FastTransformation);
 
 
@@ -220,12 +256,12 @@ void PitchVis::renderer() {
 
                     painter.drawLine(beatxpos,y1,beatxpos,y2);
 
-                    qDebug() << "Beat line: " << beatxpos << " time"<<beattime;
+                    //qDebug() << "Beat line: " << beatxpos << " time"<<beattime;
                 }
                 quarter_beat_index ++;
             }
 
-            qDebug() << "graphstarttime: " << graphstarttime << " graphendtime"<<graphendtime;
+            qDebug() << "graphstarttime: " << graphstarttime << " graphendtime"<<graphendtime << "m_rate"<<m_rate<<"x1"<<x1<<"x2"<<x2<<"y1"<<y1<<"y2"<<y2;
 
 
 			PitchVis::Paths const& paths = getPaths();

@@ -8,12 +8,15 @@
 #include <QDebug>
 
 static const unsigned FFT_P = 14; //14 is best for me // FFT size setting, will use 2^FFT_P sample FFT
-
 static const unsigned FFT_P_HF = 10;  // FFT si
 static const std::size_t FFT_N_HF = 1 << FFT_P_HF;  // FFT size in samples
 
+static const unsigned FFT_EAC_P = 11;
+static const std::size_t FFT_N_EAC = 1<< FFT_EAC_P;
 
-static const unsigned ZERO_PADDING_FACTOR = 1;
+
+
+static const unsigned ZERO_PADDING_FACTOR = 2;
 static const std::size_t FFT_N = 1 << FFT_P;  // FFT size in samples
 static const std::size_t FFT_STEP = 512;  // Step size in samples, should be <= 0.25 * FFT_N. Low values cause high CPU usage.
 static const double FFT_VIZ_MINFREQ = 67.0;
@@ -29,6 +32,102 @@ Tone::Tone(): freq(), level(), prev(), next() {
 
 bool Tone::operator==(double f) const {
 	return std::abs(freq / f - 1.0) < 0.06;  // Half semitone
+}
+
+std::vector<float> Analyzer::enhanced_autocorrelation(int windowSize,float * pcm){
+    // Now repopulate
+   // float mRate = rate;
+    unsigned mWindowSize = windowSize;
+
+    auto half = mWindowSize / 2;
+    std::vector<float> mProcessed (mWindowSize,0.0);
+    mProcessed.resize(mWindowSize);
+    std::vector<float>  in(mWindowSize,0.0);
+    std::vector<float>  out(mWindowSize,0.0);
+    std::vector<float>  out2(mWindowSize,0.0);
+    std::vector<float>  win(mWindowSize,0.0);
+
+    for (int i = 0; i < mWindowSize; i++) { //Hann Window
+        win[i] = 0.5 * (1 - cos(2*3.141592*i/(mWindowSize)));
+        in[i] = pcm[i];
+    }
+
+    // Take FFT
+
+    //wrap shitty da::fft to use it instead of realfft
+
+    std::vector<std::complex<float>> myfftresults;
+    //Fourier
+    myfftresults = da::fft<FFT_EAC_P>(pcm, win);
+    for (int i = 0; i < mWindowSize; i++){
+        out[i] = myfftresults[i].real();
+        out2[i]= myfftresults[i].imag();
+    }
+
+    //RealFFT(mWindowSize, in.get(), out.get(), out2.get());
+    // Compute power
+    for (size_t i = 0; i < mWindowSize; i++)
+       in[i] = (out[i] * out[i]) + (out2[i] * out2[i]);
+
+       // Tolonen and Karjalainen recommend taking the cube root
+       // of the power, instead of the square root
+
+    for(size_t i = 0; i < mWindowSize; i++){
+          in[i] = pow(in[i], 1.0f / 3.0f);
+    }
+
+    // Take FFT
+
+    //RealFFT(mWindowSize, in.get(), out.get(), out2.get());
+    myfftresults = da::fft<FFT_EAC_P>(pcm, win);
+    for (int i = 0; i < mWindowSize; i++){
+        out[i] = myfftresults[i].real();
+        out2[i]= myfftresults[i].imag();
+    }
+
+    // Take real part of result
+    for (size_t i = 0; i < half; i++)
+       mProcessed[i] += out[i];
+    float mYMin = 1000000, mYMax = -1000000;
+       double scale;
+       for (size_t i = 0; i < half; i++)
+                mProcessed[i] = mProcessed[i];//  / windows; dunno what this is
+
+     // Peak Pruning as described by Tolonen and Karjalainen, 2000
+
+     // Clip at zero, copy to temp array
+     for (size_t i = 0; i < half; i++) {
+        if (mProcessed[i] < 0.0)
+           mProcessed[i] = float(0.0);
+        out[i] = mProcessed[i];
+     }
+
+     // Subtract a time-doubled signal (linearly interp.) from the original
+     // (clipped) signal
+     for (size_t i = 0; i < half; i++)
+        if ((i % 2) == 0)
+           mProcessed[i] -= out[i / 2];
+        else
+           mProcessed[i] -= ((out[i / 2] + out[i / 2 + 1]) / 2);
+
+     // Clip at zero again
+     for (size_t i = 0; i < half; i++)
+        if (mProcessed[i] < 0.0)
+           mProcessed[i] = float(0.0);
+
+     // Find NEW min/max
+      mYMin = mProcessed[0];
+      mYMax = mProcessed[0];
+      int maxPfreq = 1;
+     for (size_t i = 1; i < half; i++)
+        if (mProcessed[i] > mYMax){
+           maxPfreq = i;
+           mYMax = mProcessed[i];
+        }
+        else if (mProcessed[i] < mYMin)
+           mYMin = mProcessed[i];
+     qDebug() << "myMax="<<mYMax<< " freq  of mYmax"<< 48000.0/maxPfreq;
+     return mProcessed;
 }
 
 Analyzer::Analyzer(double rate, std::string id):
@@ -52,15 +151,21 @@ Analyzer::Analyzer(double rate, std::string id):
     for (int i = 0; i < FFT_N_HF; i++) { //Hann Window
         m_window_hf[i] = 0.5 * (1 - cos(2*3.141592*i/(FFT_N_HF)));
     }
+    qDebug() <<"Analyzer initialized with m_rate of "<<m_rate<<"FFT_N of"<<FFT_N<< "Zero padding factor of "<<ZERO_PADDING_FACTOR;
 }
 
 unsigned Analyzer::processSize() const { return FFT_N; }
 unsigned Analyzer::processStep() const { return FFT_STEP; }
 
 void Analyzer::calcFFT(float* pcm) {
-
+    //make a test copy of the data:
+    std::vector<float> pcmdata(FFT_N);
+    for (int i =0; i < FFT_N; i++){
+        pcmdata[i]= pcm[i];
+    }
 	m_fft = da::fft<FFT_P>(pcm, m_window);
     m_fft_hf = da::fft<FFT_P_HF>(pcm,m_window_hf);
+    //eac = enhanced_autocorrelation(FFT_N_EAC,pcm);
     /*Complex cdata[FFT_N];
 
     for (int i = 0; i < m_window.size();i++){
@@ -99,10 +204,10 @@ bool Combo::match(double freqOther) const { return matchFreq(freq, freqOther); }
 
 void Analyzer::calcTones() { // this is run once for each FFT_STEP
     // Precalculated constantsv
-
-    const double freqPerBin = m_rate / (FFT_N/2) ; //BECAUSE Maxfreq is FFT_N/r
+    //m_rate = 44100;
+    const double freqPerBin = m_rate / (FFT_N) ; //BECAUSE Maxfreq is FFT_N/r
     //IMPORTANT: freqeuncies CHANGE with mono/stereo tracks!
-    const double freqPerBin_hf = m_rate / (FFT_N_HF/2)  ; //BECAUSE Maxfreq is FFT_N/r
+    const double freqPerBin_hf = m_rate / (FFT_N_HF)  ; //BECAUSE Maxfreq is FFT_N/r
 	const double phaseStep = 2.0 * M_PI * FFT_STEP / FFT_N;
 	const double normCoeff = 1.0 / FFT_N;
 	// Limit frequency range of processing
@@ -119,7 +224,7 @@ void Analyzer::calcTones() { // this is run once for each FFT_STEP
 	// Process FFT into peaks
     int highestlevel_bin = 0;
     float highestlevel = 0.0;
-
+/*
 	for (size_t k = 1; k < kMax; ++k) {
 		double level = normCoeff * std::abs(m_fft[k]);
         if (level > highestlevel){
@@ -140,26 +245,34 @@ void Analyzer::calcTones() { // this is run once for each FFT_STEP
 	}
     if (highestlevel > 0.00001) {
         //qDebug() << "Highest level " << highestlevel << "frequency_bin"<<highestlevel_bin <<"freqency"<< highestlevel_bin *freqPerBin;
-    }
+    }*/
 
     std::vector<double> visfftvec;
     visfftvec.resize(FFT_VIZ);
     std::vector<double> visfftvec_hf;
     visfftvec_hf.resize(FFT_VIZ);
-
     for (size_t n = 0; n < FFT_VIZ;n++){
+        float binf = (FFT_VIZ_MINFREQ/freqPerBin)*pow(2.0,n/(FFT_VIZ/4.0));
+        size_t bin_id = (int) floor(binf);
+        size_t bin_next = (int) ceil(binf);
+        //visfftvec[n] =
+        float levelthisbin = level2dB(normCoeff * std::abs(m_fft[bin_id]));
+        float levelnextbin = level2dB(normCoeff * std::abs(m_fft[bin_next]));
+        visfftvec[n] = levelthisbin*(bin_next-binf) + levelnextbin*(binf-bin_id);
+        if (first)
+            qDebug() << " N " <<  n << " bin_id: "<<bin_id << "fft val="<< visfftvec[n]<< "known frequency" << freqPerBin*bin_id;
 
-        size_t bin_id = (int) floor((FFT_VIZ_MINFREQ/freqPerBin)*pow(2.0,n/(FFT_VIZ/4.0)));
+        //visfftvec[n] = eac[bin_id]*(bin_next-binf) + eac[bin_next]*(binf-bin_id);
+        //visfftvec[n] = eac[bin_id];
+        bin_id = (int) floor((FFT_VIZ_MAXFREQ/freqPerBin_hf)*pow(2.0,n/(FFT_VIZ/6.0)));
+        visfftvec_hf[n] = level2dB(normCoeff * std::abs(m_fft_hf[n]));
 
-        visfftvec[n] = level2dB(normCoeff * std::abs(m_fft[bin_id]));
-        bin_id = (int) floor((FFT_VIZ_MAXFREQ/freqPerBin_hf)*pow(2.0,n/(FFT_VIZ/4.0)));
-        visfftvec_hf[n] = level2dB(normCoeff * std::abs(m_fft_hf[bin_id]));
-
-        //qDebug() << " N " <<  n << " bin_id: "<<bin_id << "fft val="<< visfftvec[n]<< "known frequency" << freqPerBin*bin_id;
     }
+    if (first)
+        first = 0;
     m_allffts.push_back(visfftvec);
     m_allffts_hf.push_back(visfftvec_hf);
-
+    return ;
     // Filter peaks and combine adjacent peaks pointing at the same frequency into one
 	typedef std::vector<Combo> Combos;
 	Combos combos;

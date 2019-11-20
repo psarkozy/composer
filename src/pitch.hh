@@ -10,7 +10,7 @@
 static inline double level2dB(double level) { return 20.0 * std::log10(level); }
 static inline double dB2level(double db) { return std::pow(10.0, db / 20.0); }
 
-static const unsigned FFT_VIZ = 512; //the number of bins for the background image
+static const unsigned FFT_VIZ = 768; //the number of bins for the background image
 
 /// A tone is a collection of a base frequency (freq) and all its harmonics
 struct Tone {
@@ -90,14 +90,16 @@ public:
 		calcFFT(&pcm[0]);
 		calcTones();
 	}
+    std::vector<float> enhanced_autocorrelation(int windowSize, float* pcm);
 	unsigned processSize() const;  ///< The number of samples required by process()
 	unsigned processStep() const;  ///< The number of samples to increment the input position after each call to process()
 	double getTime() const { return m_moments.empty() ? 0.0 : m_moments.back().time(); }
     FFTs m_allffts; //list of vectors of DB values for the known range
     FFTs m_allffts_hf; //list of vectors of DB values for the known range
-
+    std::vector<float> eac;
     double m_rate;
 private:
+    int first = 1;
 	std::string m_id;
 	std::vector<float> m_window;
 

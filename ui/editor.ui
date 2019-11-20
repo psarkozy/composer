@@ -53,6 +53,9 @@
        <property name="widgetResizable">
         <bool>true</bool>
        </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+       </property>
        <widget class="QWidget" name="noteGraphScrollerContents">
         <property name="geometry">
          <rect>
@@ -75,7 +78,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabGeneral">
        <attribute name="title">

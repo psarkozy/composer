@@ -91,7 +91,7 @@ namespace da {
 		// Perform bit-reversal sorting of sample data.
 		const std::size_t N = 1 << P;
 		std::size_t j = 0;
-		for (std::size_t i = 0; i < N; ++i) {
+        for (std::size_t i = 0; i < N; i++) {
 			data[j] = *begin++ * window[i];
 			std::size_t m = N / 2;
 			while (m > 1 && m <= j) { j -= m; m >>= 1; }
